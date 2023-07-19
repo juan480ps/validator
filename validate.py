@@ -2,15 +2,17 @@ import psycopg2, datetime as dt, requests
 from flask import request, request, jsonify
 from .config.db.db_config_pstgr import postgresqlConfig
 
-connpost = psycopg2.connect(postgresqlConfig)
-cur = connpost.cursor()
+connpost = psycopg2.connect(postgresqlConfig)# se importa la configuracion del postgres
+cur = connpost.cursor() # se abre cursor
 
-url_auth_login = 'http://localhost:5001/aut/login'
+#urls 
+url_auth_login = 'http://localhost:5001/aut/login' 
 url_auth_get_api = 'http://localhost:5001/aut/getapibyalias/'
 
 # url_auth_login = 'http://192.168.150.156:6001/aut/login'
 # url_auth_get_api = 'http://192.168.150.156:6001/aut/getapibyalias/'
 
+#variables
 token = ''
 cookie = ''
 momento = dt.datetime.fromtimestamp(1688410986) - dt.timedelta(days=20*365)
@@ -21,7 +23,7 @@ objetoJson = {}
 api_key_pool = {}
 api_key_auth = {}
 
-def save_token_access(token='', momento='', vencimiento_token='', apikey='null'):
+def save_token_access(token='', momento='', vencimiento_token='', apikey='null'):#funcion que guarda el token con la apikey y el vencimiento
     try:
         apikey = api_key_pool['apikey']
     except Exception as e:
@@ -35,7 +37,7 @@ def save_token_access(token='', momento='', vencimiento_token='', apikey='null')
     cur.execute(query)
     connpost.commit()
     
-def check_token(token):
+def check_token(token): #funcion que valida si el token existe
     query = f"""SELECT 1
                 FROM token_access
                 where token_nro  = '{token}'
@@ -45,7 +47,7 @@ def check_token(token):
     connpost.commit()
     return data != None
 
-def check_vigencia_token(token, momento):
+def check_vigencia_token(token, momento): # funcion que verifica la vigencia del token
     query = f"""SELECT 1
                 FROM token_access
                 where token_nro  = '{token}'
@@ -56,7 +58,7 @@ def check_vigencia_token(token, momento):
     connpost.commit()
     return data == None
 
-def get_vencimiento_token(token):
+def get_vencimiento_token(token): # funcion que devulve la fecha de vencimiento del token
     query = f"""SELECT vencimiento_token
                 FROM token_access
                 where token_nro  = '{token}'
@@ -66,12 +68,12 @@ def get_vencimiento_token(token):
     connpost.commit()
     return data[0]
 
-def force_token_expiration(token):
+def force_token_expiration(token): # funcion para forzar el vencimiento de token "para pruebas"
     query = f"""update token_access set hora_creacion_token = vencimiento_token where token_nro  = '{token}' """
     cur.execute(query)
     connpost.commit()
     
-def get_api_key(json_data, ambiente):
+def get_api_key(json_data, ambiente): # funcion que retorna la apikey llamando al webservice de autenticador
     global url_auth_get_api, api_key_pool
     objetoJson = {}
     json_data["params"]["apikey"] = api_key_auth['apikey']
@@ -90,7 +92,7 @@ def get_api_key(json_data, ambiente):
         return objetoJson
     
     
-def validator(request, token, session_closed, api_key_auth, APP_CONTEXT):
+def validator(request, token, session_closed, api_key_auth, APP_CONTEXT):#funcion que valida la sesion del cliente
     global token_is_expired, vencimiento_token, objetoJson
     token_request = ''
     data = request.get_json()
@@ -160,7 +162,7 @@ def validator(request, token, session_closed, api_key_auth, APP_CONTEXT):
     return respuesta, token, momento, vencimiento_token, token_is_expired, session_closed
 
 
-def oper_validator(request, token, api_key_auth_, vencimiento_token,  json, ambiente):
+def oper_validator(request, token, api_key_auth_, vencimiento_token,  json, ambiente): #funcion que valida el token de sesion para poder realizar las operaciones requeridas
     global api_key_auth, api_key_pool
     api_key_auth = api_key_auth_
     try:
@@ -207,7 +209,7 @@ def oper_validator(request, token, api_key_auth_, vencimiento_token,  json, ambi
     connpost.commit()
     return respuesta
 
-def get_login(json_data, api_key_auth, APP_CONTEXT, momento):
+def get_login(json_data, api_key_auth, APP_CONTEXT, momento):# funcion que obtiene el token en el webservice de autenticacion
     global vencimiento_token, session_closed
     objetoJson = {}
     arrayJson = []
@@ -240,7 +242,7 @@ def get_login(json_data, api_key_auth, APP_CONTEXT, momento):
     connpost.commit()
     return respuesta
 
-def check_my_token():
+def check_my_token():#funcion que verifica el estado del token
     global token_is_expired, vencimiento_token, token, session_closed
     try:
         momento = dt.datetime.strptime(str(dt.datetime.now()), '%Y-%m-%d %H:%M:%S.%f')
@@ -277,7 +279,7 @@ def check_my_token():
     respuesta = {'codigo': codigo, 'descripcion': descripcion, 'objetoJson' : token, 'arrayJson' : []}
     return respuesta, token, momento, vencimiento_token, token_is_expired, session_closed
 
-def logout(token_):
+def logout(token_): #funcion para cerrar sesion "usado para pruebas"
     global session_closed
     if token_:
         session_closed = True
